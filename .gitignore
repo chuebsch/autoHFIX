@@ -1,0 +1,6 @@
+release
+debug
+Makefile
+Makefile.release
+Makefile.debug
+autoHFIX.pro.user
