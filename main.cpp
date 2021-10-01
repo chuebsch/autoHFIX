@@ -29,6 +29,7 @@ void trimm(char s[]){
   for (size_t i=0; i<len; i++) if ((sc[i]!='\'')&&(!isspace(sc[i]))) s[j++]=static_cast<char>(toupper(sc[i]));
   s[j]='\0';
 }
+
 int readHeader(const char *filename){
   /*! reads the header of an fcf file
   */
