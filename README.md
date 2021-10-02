@@ -1,2 +1,2 @@
 # autoHFIX
-Automatic adds AFIX instructions for hydrogen atoms to SHELX input file based on geometry and residual desity
+Adds AFIX instructions for hydrogen atoms to SHELX input files based on geometry and residual desity automatically
