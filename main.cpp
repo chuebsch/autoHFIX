@@ -296,7 +296,9 @@ void loadFouAndPerform(const char filename[]){
   lr[nr].fc=f000;
   lr[nr].phi=0.0f;
   nr=1;
-  HKLMX=200;
+  int hmin=0, hmax=0;
+  int kmin=0, kmax=0;
+  int lmin=0, lmax=0;
   //printf("f000 %g\n",f000);
   fprintf(stderr,"%s\n",filename);
 
@@ -304,16 +306,25 @@ void loadFouAndPerform(const char filename[]){
     if (fgets(line,120,f)){}//just a stupid supression for annoying warnig
     int rdi=
       sscanf(line,"%d %d %d %f %f %f %f",&lr[nr].ih,&lr[nr].ik, &lr[nr].il ,&lr[nr].fo, &lr[nr].so, &lr[nr].fc, &lr[nr].phi);
-    if (rdi==7) {
+    if (rdi==7) {        
       if ((abs(lr[nr].ih)<HKLMX)&&
           (abs(lr[nr].ik)<HKLMX)&&
           (abs(lr[nr].il)<HKLMX)&&
-          ((lr[nr].ih|lr[nr].ik|lr[nr].il)!=0))
+          ((lr[nr].ih|lr[nr].ik|lr[nr].il)!=0)){
+          hmin=lr[nr].ih<hmin?lr[nr].ih:hmin;
+          hmax=lr[nr].ih>hmax?lr[nr].ih:hmax;
+
+          kmin=lr[nr].ik<kmin?lr[nr].ik:kmin;
+          kmax=lr[nr].ik>kmax?lr[nr].ik:kmax;
+
+
+          lmin=lr[nr].il<lmin?lr[nr].il:lmin;
+          lmax=lr[nr].il>lmax?lr[nr].il:lmax;
 
         //printf("%4d%4d%4d %g %g\n", lr[nr].ih, lr[nr].ik, lr[nr].il ,lr[nr].fo, lr[nr].so);
         nr++;
+      }
     }
-
     // else printf("?? %d {%s}\n",rdi,line);
 
     if (nr>=LM) {
@@ -326,6 +337,9 @@ void loadFouAndPerform(const char filename[]){
     fprintf(stderr,"Map generation failed. No reflection data in file %s.",filename);
     return;
   }
+
+  printf("%d<h<%d  %d<h<%d  %d<h<%d\n",hmin,hmax,kmin,kmax,lmin,lmax);
+
 
   for (int i=0;i<nr;i++){
     double u=lr[i].ih,v=lr[i].ik,w=lr[i].il;
@@ -2773,6 +2787,7 @@ void load_sheldrick(QString fileName, QString &inhalt){
 }//shelx
 
 int main(int argc, char *argv[]){
+    HKLMX=200;
     QCoreApplication a(argc, argv);
     QString fileName="";
     if (argc>1){
