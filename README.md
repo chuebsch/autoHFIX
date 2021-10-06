@@ -8,7 +8,7 @@ autoHFIX.exe [-options] filename.res
 ## Options:
 
 * **-HKLMAX** maximum hkl index [200] to be read from *filename.hkl* file
-* **-recheck* loads the resuling ins file to check the effect of the hydrogen atoms added to R value and residual density.
+* **-recheck** loads the resuling ins file to check the effect of the hydrogen atoms added to R value and residual density.
 
 ## Output files:
 
