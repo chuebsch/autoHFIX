@@ -114,8 +114,6 @@ int readHeader(const char *filename){
       D[8]=C[0]*C[1]*D[2]/C[14];
     }
     if ((!strncmp(dum,"_symmetry_equiv_pos_as_xyz",26))||(!strncmp(dum,"_space_group_symop_operation_xyz",32))){
-      //      char s1[50],s2[50],s3[50];
-      //      char *kill=NULL,*nom=NULL,*div=NULL ;
       dum=fgets(line,120,f);
       trimm(line);
       while (strchr(line,'Y')) {
@@ -185,12 +183,6 @@ int readHeader(const char *filename){
     }
   }
   fclose(f);
-  /*
-  for(int i=0; i<15; i++){
-  printf("C[%d] = %f",i,C[i]);
-  if (i<9)printf(" D[%d] = %f",i,D[i]);
-  printf("\n");
-  }// */
   return 0;
 }
 
@@ -252,7 +244,6 @@ void sorthkl(int nr, Rec r[]){
   free(hilf);
 }
 
-
 void loadFouAndPerform(const char filename[]){
   /*! loads a fcf file prepares the reciprocal data for the fourier transpormation and performs it.
   */
@@ -262,15 +253,11 @@ void loadFouAndPerform(const char filename[]){
     1152,1200,1215,1250,1280,1296,1350,1440,1458,1500,1536,1600,1620,1728,1800,1875,1920,1944,2000,2025,2048,2160,
     2187,2250,2304,2400,2430,2500,2560,2592,2700,2880,2916,3000,3072,3125,3200,3240,3375,3456,3600,3645,3750,3840,
     3888,4000,4050,4096,4320,4374,4500,4608,4800,4860,5000};//!multiples of 2 3 and 5
-
-  printf("loadFouAndPerform %d {%s}\n",__LINE__,filename);
   int ok;
   if (strstr(filename,".fcf")==NULL) return;
   FILE *f;
   double rr=6.0;
-  //printf("%d\n",__LINE__);
   ok= readHeader(filename);
-  //printf("%d\n",__LINE__);
   if (ok) {
     switch (ok){
       case 1: fprintf(stderr, "Map generation failed. SHELXL LIST code was not 6.\n");break;
@@ -280,7 +267,6 @@ void loadFouAndPerform(const char filename[]){
     }
     return;
   }
-  //printf("%d\n",__LINE__);
   f=fopen(filename,"rb");
   if (f==NULL)return;
   char line[122]="";
@@ -299,7 +285,6 @@ void loadFouAndPerform(const char filename[]){
   int hmin=0, hmax=0;
   int kmin=0, kmax=0;
   int lmin=0, lmax=0;
-  //printf("f000 %g\n",f000);
   fprintf(stderr,"%s\n",filename);
 
   while (!feof(f)){
@@ -320,13 +305,9 @@ void loadFouAndPerform(const char filename[]){
 
           lmin=lr[nr].il<lmin?lr[nr].il:lmin;
           lmax=lr[nr].il>lmax?lr[nr].il:lmax;
-
-        //printf("%4d%4d%4d %g %g\n", lr[nr].ih, lr[nr].ik, lr[nr].il ,lr[nr].fo, lr[nr].so);
         nr++;
       }
     }
-    // else printf("?? %d {%s}\n",rdi,line);
-
     if (nr>=LM) {
       fprintf(stderr,"to many reflections in fcf file\n");
       return;
@@ -337,10 +318,7 @@ void loadFouAndPerform(const char filename[]){
     fprintf(stderr,"Map generation failed. No reflection data in file %s.",filename);
     return;
   }
-
   printf("%d<h<%d  %d<h<%d  %d<h<%d\n",hmin,hmax,kmin,kmax,lmin,lmax);
-
-
   for (int i=0;i<nr;i++){
     double u=lr[i].ih,v=lr[i].ik,w=lr[i].il;
     int mh=lr[i].ih,mk=lr[i].ik,ml=lr[i].il;
@@ -401,8 +379,6 @@ void loadFouAndPerform(const char filename[]){
     float DX;
     float DY;
     float DZ;
-
-
     {
       int mh=0, mk=0, ml=0,j;
       for (int n=0; n<nr; n++){
@@ -423,17 +399,6 @@ void loadFouAndPerform(const char filename[]){
       for (int i=0; it[i]< j; i++)n2=it[i+1];
       j=(int)(rr*ml+.5);
       for (int i=0; (it[i]< j)||((nc)&&(it[i]%2)); i++) n3=it[i+1];
-      /*if (!voxelstr.isEmpty()) {
-        if (voxelstr.contains('x')) {
-          QStringList lll=voxelstr.split('x');
-          if (lll.size()==3){
-            n1=lll.at(0).toInt();
-            n2=lll.at(1).toInt();
-            n3=lll.at(2).toInt();
-            printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n %d %d %d \n",n1,n2,n3);
-          }
-        }
-      }// */
       n4=n2*n1;
       n5=n3*n4;
       datfo_fc=(float*) malloc(sizeof(float)*n5);
@@ -450,7 +415,6 @@ void loadFouAndPerform(const char filename[]){
     //for (int typ=0; typ<2;typ++)
     {
       double miZ=99999.99,maZ=-99999.99;
-      //      mInimum[typ]=99999.99; mAximum[typ]=-99999.99;
       int nbytes,dims[3];
       dims[0]=n3;
       dims[1]=n2;
@@ -541,7 +505,6 @@ void loadFouAndPerform(const char filename[]){
 #else
         DD=B[i].r;
 #endif
-        //	maxi[typ]=fmax(maxi[typ],DD); mini[typ]=fmin(mini[typ],DD);
         miZ=fmin(miZ,DD);
         maZ=fmax(maZ,DD);
         DM+=DD;
@@ -557,57 +520,6 @@ void loadFouAndPerform(const char filename[]){
       free(B);
     }//1
   }//2
-  /*
-  urs=V3(0,0,0);int gt=0;
-  for (int i=0; i<mole->showatoms.size();i++)
-    if (mole->showatoms.at(i).an>-1) {urs+=mole->showatoms.at(i).frac;gt++;}
-  urs*=1.0/gt;
-  urs=V3(1,1,1)-1.0*urs;
-  mole->frac2kart(urs,urs);
-//
-  nodex= (FNode*)malloc(sizeof(FNode)*n5);
-  if (nodex==NULL){
-      fprintf(stderr,"Too less memory for node X!\n");
-      free(datfo);
-      free(datfo_fc);
-      datfo=NULL;
-      datfo_fc=NULL;
-      fprintf(stderr,"Could not allocate sufficient memory for density maps. Defaults have been applied. \n");
-      return;
-  }
-  nodey= (FNode*)malloc(sizeof(FNode)*n5);
-  if (nodey==NULL){
-      fprintf(stderr,"Too less memory for node Y!\n");
-      free(nodex);
-      free(datfo);
-      free(datfo_fc);
-      nodex = NULL;
-      datfo = NULL;
-      datfo_fc = NULL;
-      fprintf(stderr,"Could not allocate sufficient memory for density maps. Defaults have been applied.\n");
-      return;
-  }
-  nodez= (FNode*)malloc(sizeof(FNode)*n5);
-  if (nodez==NULL){
-      fprintf(stderr,"Too less memory for node Z!\n");
-      free(nodex);
-      free(nodey);
-      free(datfo);
-      free(datfo_fc);
-      nodex = NULL;
-      nodey = NULL;
-      datfo = NULL;
-      datfo_fc = NULL;
-      fprintf(stderr,"Could not allocate sufficient memory for density maps. Defaults have been applied.\n");
-      return;
-  }
-  for (int no=0;no<(n5*27);no++) noGoMap[no]=0;
-  for (int o=0; o<n5;o++){
-    nodex[o].flag=0;
-    nodey[o].flag=0;
-    nodez[o].flag=0;
-  }
-  // */
   dx=V3(1.0/(n1),0,0);
   dy=V3(0,1.0/(n2),0);
   dz=V3(0,0,1.0/(n3));
@@ -615,11 +527,9 @@ void loadFouAndPerform(const char filename[]){
   mole.frac2kart(dy,dy);
   mole.frac2kart(dz,dz);
   fprintf(stderr,"Uniq Reflections: %d\nFourier grid dimensions: %d X %d X %d = %d grid points.\n",nr,n1,n2,n3,n5);
-
 }
 
 void addNewScatteringFactor(int oz){
-  //changeElemetofLabel(mole.pse(oz));
   if (sfac.contains(oz)) {
     return;
   }
@@ -637,8 +547,6 @@ void addNewScatteringFactor(int oz){
 }
 
 MyAtom findOH(V3 donor, V3 acceptor,int dindex,QStringList alab){
-
-  //  printf("findOH %d %d\n",__LINE__,dindex);
   CEnvironment peaks;
   QString nn;
   peaks.clear();
@@ -673,7 +581,6 @@ MyAtom findOH(V3 donor, V3 acceptor,int dindex,QStringList alab){
         .arg(nnn)
         .arg((htest.resiNr)?QString::number(htest.resiNr):"");
     else nn=nnn;
-    // qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
     hindex++;
   }while(alab.contains(nn,Qt::CaseInsensitive));
   htest.Label=nnn;
@@ -723,7 +630,6 @@ MyAtom findOH(V3 donor, V3 acceptor,int dindex,QStringList alab){
         r=0.5*(w-z)/(w+z);
         t=t+0.25*(p*(u-x)+q*(v-y)+r*(w-z));
         if (t<fabs(sigma[0])*3.3) continue;// if this is below the green iso surface then skip
-        printf("peak %f\n",t);
         htest.peakHeight=t;
         htest.frac.x = ((double) i + p +0.5)/n1;
         htest.frac.y = ((double) j + q +0.5)/n2;
@@ -763,11 +669,6 @@ MyAtom findOH(V3 donor, V3 acceptor,int dindex,QStringList alab){
 
 void autoHFix(){
   if (mole.asymm.isEmpty()) {printf("no atoms?\n");return;}
-  //printf("%d %d %d %d\n",mole.asymm.size(),mole.contact.size(),mole.knoepfe.size(),mole.showatoms.size());
-  /*int warmal=mole.asymm.size();
-  int warmalAtome=0;
-  for (int i=0; i<mole.asymm.size();i++) if (mole.asymm.at(i).an>=0)warmalAtome++;
-*/
   QStringList alab;
   for (int i =0; i<mole.asymm.size(); i++){
     alab.append(mole.asymm.at(i).Label);
@@ -807,7 +708,6 @@ void autoHFix(){
   QMap<int,int> keinDonor;
   QMap<int,int> istDonor;
   for (int j=0;j<mole.contact.size();j++){
-      //printf("%d\n",__LINE__);
     double ch1,ch2;
     if (mole.knoepfe.at(mole.contact.at(j).a1).neighbors.size()==0) keinDonor[mole.contact.at(j).a1]++;
     if (mole.knoepfe.at(mole.contact.at(j).a2).neighbors.size()==0) keinDonor[mole.contact.at(j).a2]++;
@@ -815,17 +715,14 @@ void autoHFix(){
     if ((mole.asymm.at(mole.contact.at(j).a2).an==7)&&(mole.knoepfe.at(mole.contact.at(j).a2).neighbors.size()>1)) keinDonor[mole.contact.at(j).a2]++;
     if ((mole.contact.at(j).covalent)){//
       ch1=ch2=0;
-
       for (int k=0; k<mole.knoepfe.at(mole.contact.at(j).a1).neighbors.size(); k++){
         ch1 += sqrt(Distance(mole.asymm.at(mole.contact.at(j).a1).pos,
               mole.showatoms.at(mole.knoepfe.at(mole.contact.at(j).a1).neighbors.at(k)).pos))-
           ((mole.Kovalenz_Radien[mole.asymm.at(mole.contact.at(j).a1).an]+
             mole.Kovalenz_Radien[mole.showatoms.at(mole.knoepfe.at(mole.contact.at(j).a1).neighbors.at(k)).an])*0.01);
-
       }
       if (mole.knoepfe.at(mole.contact.at(j).a1).neighbors.size())
         ch1*=1.0/mole.knoepfe.at(mole.contact.at(j).a1).neighbors.size();
-
       for (int k=0; k<mole.knoepfe.at(mole.contact.at(j).a2).neighbors.size(); k++){
         ch2 += sqrt(Distance(mole.asymm.at(mole.contact.at(j).a2).pos,
               mole.showatoms.at(mole.knoepfe.at(mole.contact.at(j).a2).neighbors.at(k)).pos))-
@@ -843,13 +740,11 @@ void autoHFix(){
   for (int i =0; i<mole.asymm.size(); i++){
     if ((mole.asymm.at(i).an==5)||(mole.asymm.at(i).an==6)){
       double nh= (mole.asymm.at(i).an==6) ? 0.07 : 0;
-      //printf("%d %s\n",__LINE__,mole.asymm.at(i).Label.toStdString().c_str());
       double plan=1.0;
       if (mole.knoepfe.at(i).neighbors.size()==1) {
         if ((mole.asymm.at(i).an==6)&&(!istDonor.contains(i))) continue;
         V3 v=V3(0,0,0),w=V3(0,0,0),u=V3(0,0,0) ,a=V3(0,0,0);//,b=V3(0,0,0),c=V3(0,0,0);
         a = mole.showatoms.at(mole.knoepfe.at(i).neighbors.at(0)).pos - mole.asymm.at(i).pos;
-        //printf("A = %s-%s %g %g %g\n",mole.showatoms.at(mole.knoepfe.at(i).neighbors.at(0)).Label.toStdString().c_str(),mole.asymm.at(i).Label.toStdString().c_str(),a.x,a.y,a.z);
         double chi = sqrt(Norm(a))-((mole.Kovalenz_Radien[mole.showatoms.at(mole.knoepfe.at(i).neighbors.at(0)).an]+mole.Kovalenz_Radien[mole.asymm.at(i).an])/100.0);
         if (chi>-0.09) {//afix 137 127
           int j,k,l;
@@ -864,7 +759,6 @@ void autoHFix(){
               } else {
                 w=Normalize(V3(0,0,1)%a);
               }
-              //printf("w= %g %g %g\n",w.x,w.y,w.z);
               u=Normalize(w%a);
               v=(-(xh[2]-nh)*0.33333*a)+ mole.asymm.at(i).pos+(xh[2]-nh)*0.942809041582*(sin(wink)*u+cos(wink)*w);
               qtest.pos=v;
@@ -929,7 +823,6 @@ void autoHFix(){
             }
             u=Normalize(w%a);
             v=(-(xh[2]-nh)*0.33333*a)+ mole.asymm.at(i).pos+(xh[2]-nh)*0.942809041582*(sin(wink)*u+cos(wink)*w);
-            // if z == i then dieder() returns nan, because A in dieder gets (0,0,0)
             V3 increm = V3(0.0, 0.0, 0.0);
             if ( z == i ) {
               increm = V3(0.00001, 0.00001, 0.00001);
@@ -955,7 +848,6 @@ void autoHFix(){
                 .arg(nnn)
                 .arg((htest.resiNr)?QString::number(htest.resiNr):"");
             else nn=nnn;
-            //             qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
             hindex++;
           }while(alab.contains(nn,Qt::CaseInsensitive));
           htest.Label=nnn;
@@ -990,7 +882,6 @@ void autoHFix(){
                 .arg(nnn)
                 .arg((htest.resiNr)?QString::number(htest.resiNr):"");
             else nn=nnn;
-            //            qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
             hindex++;
           }while(alab.contains(nn,Qt::CaseInsensitive));
           htest.Label=nnn;
@@ -1017,7 +908,6 @@ void autoHFix(){
                 .arg(nnn)
                 .arg((htest.resiNr)?QString::number(htest.resiNr):"");
             else nn=nnn;
-            //            qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
             hindex++;
           }while(alab.contains(nn,Qt::CaseInsensitive));
           htest.Label=nnn;
@@ -1034,7 +924,6 @@ void autoHFix(){
             .arg("-1.5");
           mole.asymm.append(htest);
           QString label = mole.showatoms.at(i).orginalLine;
-          //          int afixfuenf=(mole.showatoms.at(i).afix/10)?(mole.showatoms.at(i).afix/10)*10+5:0;
           int cpos = resLines.indexOf(label);
           while (resLines.at(cpos).endsWith("=")) cpos++;
           resLines.insert(cpos+1,QString("AFIX 137\n%1\n%2\n%3\nAFIX %4")
@@ -1090,7 +979,6 @@ void autoHFix(){
               mt=(mt>t)?mt:t;
               if (t<mt)continue;
               wink=((double) z + p )*0.261799387799;
-
               /////////////////
             }
           }else{
@@ -1101,7 +989,6 @@ void autoHFix(){
             w=Normalize(V3(0,0,1)%a);
             u=Normalize(w%a);
             v=(-(xh[2]-nh)*0.33333*a)+ mole.asymm.at(i).pos+(xh[2]-nh)*0.942809041582*(sin(wink)*u+cos(wink)*w);
-            // if z == i then dieder() returns nan, because A in dieder gets (0,0,0)
             V3 increm = V3(0.0, 0.0, 0.0);
             if ( z == i ) {
               increm = V3(0.00001, 0.00001, 0.00001);
@@ -1109,9 +996,7 @@ void autoHFix(){
             wink=mole.dieder(mole.showatoms.at(mole.knoepfe.at(i).neighbors.at(0)).pos+increm-mole.asymm.at(z).pos,
                 mole.asymm.at(i).pos-mole.showatoms.at(mole.knoepfe.at(i).neighbors.at(0)).pos,
                 v-mole.asymm.at(i).pos)/180.0*M_PI;
-
           }
-
           v=(-(xh[6]-nh)*0.5*a)+ mole.asymm.at(i).pos+(xh[6]-nh)*0.866025403784*(sin(wink)*u+cos(wink)*w);
           htest.Label=mole.asymm.at(i).Label.section('_',0,0);
           htest.part=mole.asymm.at(i).part;
@@ -1129,7 +1014,6 @@ void autoHFix(){
                 .arg(nnn)
                 .arg((htest.resiNr)?QString::number(htest.resiNr):"");
             else nn=nnn;
-            // qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
             hindex++;
           }while(alab.contains(nn,Qt::CaseInsensitive));
           htest.Label=nnn;
@@ -1164,7 +1048,6 @@ void autoHFix(){
                 .arg(nnn)
                 .arg((htest.resiNr)?QString::number(htest.resiNr):"");
             else nn=nnn;
-            // qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
             hindex++;
           }while(alab.contains(nn,Qt::CaseInsensitive));
           htest.Label=nnn;
@@ -1180,7 +1063,6 @@ void autoHFix(){
             .arg(mole.asymm.at(i).sof_org)
             .arg("-1.2");
           mole.asymm.append(htest);
-
           QString label = mole.showatoms.at(i).orginalLine;
           int cpos = resLines.indexOf(label);
           while (resLines.at(cpos).endsWith("=")) cpos++;
@@ -1207,7 +1089,6 @@ void autoHFix(){
                   .arg(nnn)
                   .arg((htest.resiNr)?QString::number(htest.resiNr):"");
               else nn=nnn;
-              // qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
               hindex++;
             }while(alab.contains(nn,Qt::CaseInsensitive));
             htest.Label=nnn;
@@ -1231,7 +1112,6 @@ void autoHFix(){
               .arg(mole.asymm.at(i).sof_org)
               .arg("-1.2");
             mole.asymm.append(htest);
-
             QString label = mole.showatoms.at(i).orginalLine;
             int cpos = resLines.indexOf(label);
             while (resLines.at(cpos).endsWith("=")) cpos++;
@@ -1243,7 +1123,6 @@ void autoHFix(){
         }
       }
       if (mole.knoepfe.at(i).neighbors.size()==2){//afix 43 oder 23
-          //printf("%d\n",__LINE__);
         if ((mole.asymm.at(i).an==6)&&(!istDonor.contains(i))) continue;
         double angle=0;
         V3 v=V3(0,0,0),w=V3(0,0,0),u=V3(0,0,0) ,a=V3(0,0,0),b=V3(0,0,0),c=V3(0,0,0);
@@ -1278,7 +1157,6 @@ void autoHFix(){
                   .arg(nnn)
                   .arg((htest.resiNr)?QString::number(htest.resiNr):"");
               else nn=nnn;
-              // qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
               hindex++;
             }while(alab.contains(nn,Qt::CaseInsensitive));
             htest.Label=nnn;
@@ -1303,7 +1181,6 @@ void autoHFix(){
               .arg("-1.2");
             mole.asymm.append(htest);
             QString label = mole.showatoms.at(i).orginalLine;
-
             int cpos = resLines.indexOf(label);
             while (resLines.at(cpos).endsWith("=")) cpos++;
             resLines.insert(cpos+1,QString("AFIX 43\n%1\nAFIX %2")
@@ -1311,7 +1188,6 @@ void autoHFix(){
                 .arg(mole.afix5(i)));
           }
           else{//23
-              //printf("%d\n",__LINE__);
             w = Normalize(a);
             u = Normalize(b);
             double si=1.0376-0.0346*Norm(w-u);    //=1.91063323625-((acos(u*w)-1.91063323625)/5.0);//-1.91063323625 = 109.47 grad ; 3.7 empirischer Wert
@@ -1320,7 +1196,6 @@ void autoHFix(){
             a = mole.asymm.at(i).pos + c + v;
             b = mole.asymm.at(i).pos + c - v;
             c = c + mole.asymm.at(i).pos;
-
             htest.Label=mole.asymm.at(i).Label.section('_',0,0);
             htest.part=mole.asymm.at(i).part;
             htest.resiNr=mole.asymm.at(i).resiNr;
@@ -1336,7 +1211,6 @@ void autoHFix(){
                   .arg(nnn)
                   .arg((htest.resiNr)?QString::number(htest.resiNr):"");
               else nn=nnn;
-              // qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
               hindex++;
             }while(alab.contains(nn,Qt::CaseInsensitive));
             htest.Label=nnn;
@@ -1359,8 +1233,7 @@ void autoHFix(){
               .arg(htest.frac.z,9,'f',5)
               .arg(mole.asymm.at(i).sof_org)
               .arg("-1.2");
-            mole.asymm.append(htest);
-            //printf("AB problem: htest%s nnn%s ann%s\n",htest.Label.toStdString().c_str(),nnn.toStdString().c_str(),ann.toStdString().c_str());
+            mole.asymm.append(htest);;
             do {
               if (hindex) nnn=ann.left(3).append(QString::number(hindex+9,36));
               if (nnn.size()>4) nnn=ann.left(2).append(QString::number(hindex+9,36));
@@ -1369,12 +1242,10 @@ void autoHFix(){
                   .arg(nnn)
                   .arg((htest.resiNr)?QString::number(htest.resiNr):"");
               else nn=nnn;
-              // qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
               hindex++;
             }while(alab.contains(nn,Qt::CaseInsensitive));
             htest.Label=nnn;
             alab.append(nn);
-            //printf("AB problems: htest%s nnn%s nn%s\n",htest.Label.toStdString().c_str(),nnn.toStdString().c_str(),nn.toStdString().c_str());
             htest.pos=b;
             mole.kart2frac(htest.pos,htest.frac);
             htest.orginalLine=QString("%1  %2  %3 %4 %5 %6 %7")
@@ -1387,22 +1258,17 @@ void autoHFix(){
               .arg("-1.2");
             mole.asymm.append(htest);
             QString label = mole.showatoms.at(i).orginalLine;
-
             int cpos = resLines.indexOf(label);
-            //printf("[%s]\n%d\n",label.toStdString().c_str(),cpos);
             while (resLines.at(cpos).endsWith("=")) cpos++;
             resLines.insert(cpos+1,QString("AFIX 23\n%1\n%2\nAFIX %3")
                 .arg(mole.asymm.at(mole.asymm.size()-2).orginalLine)
                 .arg(mole.asymm.at(mole.asymm.size()-1).orginalLine)
                 .arg(mole.afix5(i)));
-
           }
         }
       }
-
       if (mole.knoepfe.at(i).neighbors.size()==3) {
         if ((mole.asymm.at(i).an==6)&&(!istDonor.contains(i))) continue;
-        //printf("%d\n",__LINE__);
         V3 v,w=V3(0,0,0),u ,a,b,c=V3(0,0,0);
         double ch1=0;
         for (int k=0; k<3; k++){
@@ -1417,7 +1283,6 @@ void autoHFix(){
                 mole.showatoms.at(mole.knoepfe.at(i).neighbors.at(k)).pos))-
             ((mole.Kovalenz_Radien[mole.asymm.at(i).an]+
               mole.Kovalenz_Radien[mole.showatoms.at(mole.knoepfe.at(i).neighbors.at(k)).an])*0.01);
-
         }
         c = Normalize(c);
         ch1*=1.0/3;
@@ -1437,7 +1302,6 @@ void autoHFix(){
                 .arg(nnn)
                 .arg((htest.resiNr)?QString::number(htest.resiNr):"");
             else nn=nnn;
-            // qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
             hindex++;
           }while(alab.contains(nn,Qt::CaseInsensitive));
           htest.Label=nnn;
@@ -1471,7 +1335,6 @@ void autoHFix(){
       }
     }
     if (((mole.asymm.at(i).an==4)||(mole.asymm.at(i).an==5))&&((mole.knoepfe.at(i).neighbors.size()==4)||(mole.knoepfe.at(i).neighbors.size()==5))){//boron with 4 or 5 neighbors AFIX 153
-        //qDebug()<<mole.knoepfe.at(i).neighbors.size()<<mole.asymm.at(i).Label;
         V3 vsum = V3(0.,0.,0.);
         int nbs=mole.knoepfe.at(i).neighbors.size();
         int nbr=0;
@@ -1481,7 +1344,7 @@ void autoHFix(){
             vsum+=(mole.showatoms.at(mole.knoepfe.at(i).neighbors.at(k)      ).pos - mole.asymm.at(i).pos);
             }
         }
-        printf("153 test length = %f %d==%d %s\n",Norm(vsum), nbs, nbr, mole.asymm.at(i).Label.toStdString().c_str());
+        //printf("153 test length = %f %d==%d %s\n",Norm(vsum), nbs, nbr, mole.asymm.at(i).Label.toStdString().c_str());
         if ((nbs==nbr)&&(Norm(vsum)>10)){
         vsum=Normalize(vsum);
         vsum*=-1.0*xh[4];
@@ -1499,7 +1362,6 @@ void autoHFix(){
               .arg(nnn)
               .arg((htest.resiNr)?QString::number(htest.resiNr):"");
           else nn=nnn;
-          // qDebug()<<nn<<nnn<<(alab.contains(nn,Qt::CaseInsensitive));
           hindex++;
         }while(alab.contains(nn,Qt::CaseInsensitive));
         htest.Label=nnn;
@@ -1523,7 +1385,6 @@ void autoHFix(){
           .arg(htest.frac.z,9,'f',5)
           .arg(mole.asymm.at(i).sof_org)
           .arg("-1.2");
-
         int cpos = resLines.indexOf(label);
         while (resLines.at(cpos).endsWith("=")) cpos++;
         resLines.insert(cpos+1,QString("AFIX 153\n%1\nAFIX %2").arg(htest.orginalLine).arg(mole.afix5(i)));
@@ -1532,9 +1393,6 @@ void autoHFix(){
     }
   }
   for (int j=0;j<mole.contact.size();j++){
-    /*printf("??LINE %d %s %s\n",__LINE__,
-             mole.asymm.at(mole.contact.at(j).a1).Label.toStdString().c_str(),
-             mole.asymm.at(mole.contact.at(j).a2).Label.toStdString().c_str());//*/
     if ((istDonor.contains(mole.contact.at(j).a1)||(!keinDonor.contains(mole.contact.at(j).a1)))
         &&(mole.asymm.at(mole.contact.at(j).a1).an==7)) {
       if (keinDonor.contains(mole.contact.at(j).a1)) continue;
@@ -1543,23 +1401,13 @@ void autoHFix(){
             + mole.cell.trans.at(mole.contact.at(j).sn) - mole.contact.at(j).floorD,
             mole.asymm.at(mole.contact.at(j).a2).frac,
             mole.contact.at(j).a1,alab);
-
-        /*printf("LINE %d %s %s\n",__LINE__,
-               mole.asymm.at(mole.contact.at(j).a1).Label.toStdString().c_str(),
-               mole.asymm.at(mole.contact.at(j).a2).Label.toStdString().c_str());*/
-
         if (Distance(htest.pos,V3(0,0,0))<0.001){
           htest = findOH(mole.asymm.at(mole.contact.at(j).a1).frac,
               mole.cell.symmops.at(mole.contact.at(j).sn) * mole.asymm.at(mole.contact.at(j).a2).frac
               + mole.cell.trans.at(mole.contact.at(j).sn) ,
               mole.contact.at(j).a1,alab);
-         /* printf("LINE %d %s %s\n",__LINE__,
-                 mole.asymm.at(mole.contact.at(j).a1).Label.toStdString().c_str(),
-                 mole.asymm.at(mole.contact.at(j).a2).Label.toStdString().c_str());*/
-          //          if (Distance(htest.pos,V3(0,0,0))<0.001){ keinDonor[mole.contact.at(j).a2]++; }
         } else {
           keinDonor[mole.contact.at(j).a1]++;
-          //         qDebug()<<"done"<<mole.asymm.at(mole.contact.at(j).a2).Label;
         }
         if (Distance(htest.pos,V3(0,0,0))){
           htest.orginalLine=QString("%1  %2  %3 %4 %5 %6 %7")
@@ -1572,7 +1420,6 @@ void autoHFix(){
             .arg("-1.5");
           mole.asymm.append(htest);
           QString label = mole.showatoms.at(mole.contact.at(j).a1).orginalLine;
-
           int cpos = resLines.indexOf(label);
           while (resLines.at(cpos).endsWith("=")) cpos++;
           resLines.insert(cpos+1,QString("AFIX 148\n%1\nAFIX %2")
@@ -1584,13 +1431,6 @@ void autoHFix(){
     }// is O is in list of donors and not in list of no donors
 
   }// all contacts
-  /*
-  if (gehtMichAn.size()) gehtMichAn.takeLast();
-  if (mole.asymm.size()!=warmal){
-    gehtMichAn.append(mole.asymm.size()-warmal+2);
-  }
-  */
-
 }
 
 
@@ -1749,7 +1589,6 @@ CEnvironment lonesome(QString s, int stnum){
   QStringList tok=s.split(sep,skipEmptyParts);
   int m=0,j=0,k=0,ll=stnum;
   MyAtom horse;
-  //static CEnvironment l;
   CEnvironment l;
   l.clear();
   MyAtom at;
@@ -1768,7 +1607,6 @@ CEnvironment lonesome(QString s, int stnum){
     return l;//big problem
   }
   such=tok.at(j);
-  //j=qMax(j,k)+1;
   j = k + 1;
   while (tok.at(j).contains(alp)) {j++;}
   double a   = getNumber(tok.at(j).toDouble(),fvar,0,ignore);
@@ -1779,8 +1617,6 @@ CEnvironment lonesome(QString s, int stnum){
   while (tok.at(j).contains(alp)) {j++;}
   double b2  = getNumber(tok.at(j).toDouble(),fvar,0,ignore);
   bool general=true;
-//    qDebug()<<s<<such<<j<<tok.size()<<k<<'m'<<m<<'a'<<a<<"b1"<<b1<<"b2"<<b2;
-
   for (int i=0; i<mole.asymm.size(); i++){
     if (such==mole.asymm.at(i).Label) {
       general=false;
@@ -1788,28 +1624,22 @@ CEnvironment lonesome(QString s, int stnum){
       break;}
   }
   if (general){
-
     QString such2=such;
     such2.remove('$');
-    // qDebug()<<such<<such2;
     int an1= mole.getOZ(such2);
     int jjj=stnum;
     for (int recurs=0; recurs<mole.asymm.size();recurs++){
       if (mole.asymm.at(recurs).an==an1){
         QString s2=s;
         s2=s2.replace(such,mole.asymm.at(recurs).Label);
-        // qDebug()<<l.size()<<s2;
         CEnvironment lrec;
         lrec=lonesome(s2, jjj);//recursion!
         jjj+=lrec.size();
         for (int dii=0; dii<lrec.size();dii++) {
-          //          qDebug()<<dii <<lrec.at(dii).Label;
           l.append(lrec[dii]);
         }
-        // qDebug()<<l.size()<<jjj<<lrec.size();;
       }
     }
-    //    for (int dii=0; dii<l.size();dii++) { qDebug()<<"return "<<dii <<l.at(dii).Label; }
     return l;
 
   }else{
@@ -1870,12 +1700,9 @@ CEnvironment lonesome(QString s, int stnum){
                at.sof=-a*l.size();
                at.Label=QString("L%1").arg(ll++);
                l.append(at);
-               //qDebug()<<n1.Label<<n2.Label;
                if (tok.size()>7) {
                  QString s2=s;
                  s2.remove(horse.Label);
-                 //qDebug()<<s2<<ll;
-
                  l.append(lonesome(s2,ll));
                }
              }
@@ -1910,9 +1737,6 @@ CEnvironment lonesome(QString s, int stnum){
                V3 ax=Normalize(vb%va);//LLLL
                double phi=tok.last().toDouble();
                double rad=tok.at(tok.size()-2).toDouble();
-               //qDebug()<<phi<<rad;
-               //qDebug()<<va.x<<va.y<<va.z;
-               //qDebug()<<vb.x<<vb.y<<vb.z;
                phi*=M_PI/360.0;//we want /2 !
                V3 c=-cos(phi)*bisect;
                if (rad<0) {
@@ -1938,12 +1762,9 @@ CEnvironment lonesome(QString s, int stnum){
                at.sof=-a*l.size();
                at.Label=QString("L%1").arg(ll++);
                l.append(at);
-               //qDebug()<<n1.Label<<n2.Label;
                if (tok.size()>8) {
                  QString s2=s;
                  s2.remove(horse.Label);
-                 //qDebug()<<s2<<ll;
-
                  l.append(lonesome(s2,ll));
                }
              }
@@ -1991,12 +1812,9 @@ CEnvironment lonesome(QString s, int stnum){
                at.sof=-a;
                at.Label=QString("L%1").arg(ll++);
                l.append(at);
-               //qDebug()<<n1.Label<<n2.Label;
                if (tok.size()>7) {
                  QString s2=s;
                  s2.remove(horse.Label);
-                 //qDebug()<<s2<<ll;
-
                  l.append(lonesome(s2,ll));
                }
              }
@@ -2029,9 +1847,6 @@ CEnvironment lonesome(QString s, int stnum){
                V3 vb= Normalize(n2.pos-horse.pos);
                V3 ax=Normalize(vb%va);//LLLL
                double rad=tok.last().toDouble();
-               //qDebug()<<phi<<rad;
-               //qDebug()<<va.x<<va.y<<va.z;
-               //qDebug()<<vb.x<<vb.y<<vb.z;
                if (rad<0) {
                  rad=-rad;
                }
@@ -2052,13 +1867,9 @@ CEnvironment lonesome(QString s, int stnum){
                at.sof=-a*l.size();
                at.Label=QString("L%1").arg(ll++);
                l.append(at);
-               //qDebug()<<"m=6!"<<s<<n1.Label<<n2.Label<<at.Label;
-               //qDebug()<<tok<<tok.size();
                if (tok.size()>7) {
                  QString s2=s;
                  s2.remove(horse.Label);
-                 //qDebug()<<s2<<ll;
-
                  l.append(lonesome(s2,ll));
                }
              }
@@ -2093,9 +1904,6 @@ CEnvironment lonesome(QString s, int stnum){
                V3 ax=Normalize(vb%va);//LLLL
                double phi=tok.last().toDouble();
                double rad=tok.at(tok.size()-2).toDouble();
-               //qDebug()<<phi<<rad;
-               //qDebug()<<va.x<<va.y<<va.z;
-               //qDebug()<<vb.x<<vb.y<<vb.z;
                phi*=M_PI/360.0;//we want /2 !
                V3 c=-cos(phi)*va;
                if (rad<0) {
@@ -2120,12 +1928,9 @@ CEnvironment lonesome(QString s, int stnum){
                at.sof=-a*l.size();
                at.Label=QString("L%1").arg(ll++);
                l.append(at);
-               //             qDebug()<<n1.Label<<n2.Label<<tok.size();
                if (tok.size()>8) {
                  QString s2=s;
                  s2.remove(horse.Label);
-                 //qDebug()<<s2<<ll;
-
                  l.append(lonesome(s2,ll));
                }
              }
@@ -2161,9 +1966,6 @@ CEnvironment lonesome(QString s, int stnum){
                V3 ax=Normalize(va%ax1);//LLLL
                double phi=tok.last().toDouble();
                double rad=tok.at(tok.size()-2).toDouble();
-               //qDebug()<<phi<<rad;
-               //qDebug()<<va.x<<va.y<<va.z;
-               //qDebug()<<vb.x<<vb.y<<vb.z;
                phi*=M_PI/360.0;//we want /2 !
                V3 c=-cos(phi)*va;
                if (rad<0) {
@@ -2188,12 +1990,9 @@ CEnvironment lonesome(QString s, int stnum){
                at.sof=-a*l.size();
                at.Label=QString("L%1").arg(ll++);
                l.append(at);
-               //qDebug()<<n1.Label<<n2.Label<<tok.size();
                if (tok.size()>8) {
                  QString s2=s;
                  s2.remove(horse.Label);
-                 //qDebug()<<s2<<ll;
-
                  l.append(lonesome(s2,ll));
                }
              }
@@ -2202,14 +2001,12 @@ CEnvironment lonesome(QString s, int stnum){
              fprintf(stderr,"%d das kann ich noch nicht! %s\n",m,such.toStdString().c_str());
     }
   }
-  //  qDebug()<<m<<such<<tok.size();
   return l;
 }
 
 
 void load_sheldrick(QString fileName, QString &inhalt){
   //! Parses the SHELX res/ins file into data structures.
-
   //printf("%d\n",__LINE__);
   bool neutrons=false;
   QString problem;
@@ -2246,7 +2043,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
   mole.lmax=-10000;
   int firstAtomLine = 0;
   int ls_cycls = 0;
-  //editor->fvMinLine = 0; // otherwise it does not recognize a moving fvar line
   MyAtom newAtom;
   newAtom.part=0;
   newAtom.resiNr=0;
@@ -2297,7 +2093,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
       newAtom.orginalLine=lines.at(i);//.section("=",0,0);
       lines[i].remove("=");
       int cmd=isacommand(lines.at(i).section(sep,0,0));
-      //qDebug()<<cmd<<lines.at(i);
       QString resiSpez=lines.at(i).section(sep,0,0).section('_',1,1);
       if (cmd==30) fragIgnore=true;
       if (cmd==27) fragIgnore=false;
@@ -2305,8 +2100,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
         switch (cmd) {
           case 1: //AFIX
             afix=lines.at(i).section(sep,1,1).toInt();
-            // For later
-            //afix_fvar = lines.at(i).section(sep,3,3).toInt();
             newAtom.afix=afix;
             break;
           case 5: {//bind
@@ -2318,7 +2111,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
                       if ((ok1)&&(ok2)) mole.bindPart[pn01]=pn02;
                       if ((ok1)&&(ok2)) mole.bindPart[pn02]=pn01;
                     }
-                    //if (notRefine) break;
                     MyBind aa;
                     aa.Lab1=lines.at(i).section(sep,1,1).toUpper();
                     aa.Lab2=lines.at(i).section(sep,2,2).toUpper();
@@ -2362,7 +2154,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
                   }
                   break;
           case 32:{ //FVAR
-                    //editor->fvMinLine=i;
                     QStringList tok = lines.at(i).split(sep,skipEmptyParts);
                     for (int ifv=1; ifv<tok.size();ifv++){
                       fvar.append(tok.at(ifv).toDouble());
@@ -2391,12 +2182,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
 
                     }
                     if (tok.size()>12)mole.hklSigmaScale=tok.at(12).toDouble();
-                   /* printf("HKLF N=%d s:%g \n%g %g %g\n%g %g %g\n%g %g %g\nsm: %g \n",mole.hklf,mole.hklScale ,
-                        mole.hklMat.m11,mole.hklMat.m12,mole.hklMat.m13,
-                        mole.hklMat.m21,mole.hklMat.m22,mole.hklMat.m23,
-                        mole.hklMat.m31,mole.hklMat.m32,mole.hklMat.m33,
-                        mole.hklSigmaScale);*/
-
                   }
                   break;
           case 41: { //LATT
@@ -2441,7 +2226,7 @@ void load_sheldrick(QString fileName, QString &inhalt){
                      QStringList tok = lines.at(i).split(sep,skipEmptyParts);
                      if ((tok.size()>4)&&(!tok.at(2).contains(QRegExp("[A-Za-z]")))) {
                        s.setSCAT(tok);
-                       if ((tok.at(2).toDouble()==0)&&((tok.at(3).toDouble()==1))) {
+                       if ((tok.at(2).toDouble()==0.0)&&((tok.at(3).toDouble()==1.0))) {
                          neutrons=true;
                        }
                        sfac.append(mole.getOZ(tok.at(1)));
@@ -2453,12 +2238,10 @@ void load_sheldrick(QString fileName, QString &inhalt){
                    }
                    break;
           case 63:{//shel
-                    //hklOmitSig,hklOmit2th,hklShellLow,hklShellHig
                     QStringList tok = lines.at(i).split(sep,skipEmptyParts);
                     if (tok.size()>2){
                       mole.hklShellLow=tok.at(1).toDouble();
                       mole.hklShellHig=tok.at(2).toDouble();
-                      // qDebug()<<mole.hklShellLow<<mole.hklShellHig;
                     }
                   }break;
           case 69:{ //SUMP
@@ -2472,7 +2255,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
                   }
                   break;
           case 70:{
-                    //SWAT g[0] U[2]
                     mole.swat=0.0;
                     mole.exti=2.0;
                     QStringList tok = lines.at(i).split(sep,skipEmptyParts);
@@ -2486,20 +2268,15 @@ void load_sheldrick(QString fileName, QString &inhalt){
                      break;
                    }
           case 75: {// TITL
-                     /*title = QString ("'%1'@ %2")
-                       .arg(lines.at(i).section(" ",1,30).simplified())
-                       .arg(fileName.section('/', -1));*/
                      mole.titl=lines.at(i).section(" ",1,-1).simplified();
                      break;
                    }
           case 78: {// UNIT
-                     //editor->unitAlt = lines.at(i) ;
                      mole.applyLatticeCentro(lattice);
 
                      break;
                    }
           case 81: {// WGHT
-                     //wghtAct->setEnabled(true);
                      break;
                    }
           case 82: {// ZERR
@@ -2507,8 +2284,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
                      break;
                    }
           case 103: {// NEUT
-                      //	qDebug()<<"Neutrons!";
-
                       neutrons=true;
                       break;
                     }
@@ -2544,17 +2319,14 @@ void load_sheldrick(QString fileName, QString &inhalt){
                       }
                       int fac=tok.at(1).toInt()-1;
                       newAtom.fixFlag=0;
-
                       newAtom.an=((fac<0)||(fac>=sfac.size()))?-2:sfac.at(fac);
                       newAtom.frac.x = getNumber(tok.at(2).toDouble(),fvar,0,newAtom.fixFlag);
                       newAtom.frac.y = getNumber(tok.at(3).toDouble(),fvar,1,newAtom.fixFlag);
                       newAtom.frac.z = getNumber(tok.at(4).toDouble(),fvar,2,newAtom.fixFlag);
                       if (qAbs(part_fvar) > 11.0 ){
-                        // fvar is defined for entire part:
                         newAtom.sof = getNumber(part_fvar, fvar, 3, newAtom.fixFlag);
                         newAtom.sof_org = part_fvar;
                       } else {
-                        // fvar is defined at each atom:
                         newAtom.sof = getNumber(tok.at(5).toDouble(), fvar, 3, newAtom.fixFlag);
                         newAtom.sof_org = tok.at(5).toDouble();
                       }
@@ -2567,15 +2339,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
                       newAtom.uf.m21 = newAtom.uf.m12 = uIso * mole.cell.cosrg;
                       mole.Uf2Uo(newAtom.uf, newAtom.uc);
                       newAtom.ufiso_org=tok.at(6);
-                      /*printf("Uiso%g uiso%g %g %g %g\n",uIso,uiso,mole.cell.cosra,mole.cell.cosrb,mole.cell.cosrg);
-                        printf("%s org=%s iso=%d\n a%9.6f b%9.6f c%9.6f  %9.6f %9.6f %9.6f\n d%9.6f e%9.6f f%9.6f  %9.6f %9.6f %9.6f\n g%9.6f h%9.6f i%9.6f  %9.6f %9.6f %9.6f\n\n",
-                        newAtom.Label.toStdString().c_str(),
-                        newAtom.ufiso_org.toStdString().c_str(),
-                        newAtom.isIso,
-                        newAtom.uf.m11,newAtom.uf.m12,newAtom.uf.m13,  newAtom.uc.m11,newAtom.uc.m12,newAtom.uc.m13,
-                        newAtom.uf.m21,newAtom.uf.m22,newAtom.uf.m23,  newAtom.uc.m21,newAtom.uc.m22,newAtom.uc.m23,
-                        newAtom.uf.m31,newAtom.uf.m32,newAtom.uf.m33,  newAtom.uc.m31,newAtom.uc.m32,newAtom.uc.m33);*/
-                      //qDebug()<< newAtom.ufiso_org<< uIso<<newAtom.uc.m11<<newAtom.uc.m22<<newAtom.uc.m33<<newAtom.uc.m23<<newAtom.uc.m13<<newAtom.uc.m12;
                       newAtom.peakHeight=-666;
                       if (newAtom.an==-66) newAtom.peakHeight=9999.99;
                       newAtom.afixParent=-1;
@@ -2617,9 +2380,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
                       newAtom.uf.m31 = newAtom.uf.m13 = uIso * mole.cell.cosrb;
                       newAtom.uf.m21 = newAtom.uf.m12 = uIso * mole.cell.cosrg;
                       newAtom.ufiso_org=tok.at(6);
-                      //newAtom.uf.m11= getNumber(tok.at(6).toDouble(), fvar, uiso);
-                      //newAtom.isIso=true;
-                      //newAtom.uf.m33= tok.at(6).toDouble();
                       newAtom.peakHeight=tok.at(7).toDouble();
                       if (!hklf) qbeforehkl=true;
                       if(newAtom.an==-1){
@@ -2628,7 +2388,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
                       }
                       newAtom.afixParent=-1;
                       mole.asymm.append(newAtom);
-
                     }
                     if (tok.size()==12){
                       // We have an ellipsoid atom!
@@ -2646,11 +2405,9 @@ void load_sheldrick(QString fileName, QString &inhalt){
                       newAtom.frac.y = getNumber(tok.at(3).toDouble(),fvar,1,newAtom.fixFlag);
                       newAtom.frac.z = getNumber(tok.at(4).toDouble(),fvar,2,newAtom.fixFlag);
                       if (qAbs(part_fvar) > 11.0 ){
-                        // fvar is defined for entire part:
                         newAtom.sof = getNumber(part_fvar, fvar, 3, newAtom.fixFlag);
                         newAtom.sof_org = part_fvar;
                       } else {
-                        // fvar is defined at each atom:
                         newAtom.sof = getNumber(tok.at(5).toDouble(), fvar, 3, newAtom.fixFlag);
                         newAtom.sof_org = tok.at(5).toDouble();
                       }
@@ -2670,10 +2427,7 @@ void load_sheldrick(QString fileName, QString &inhalt){
                   }
                   break;
         }
-
-
     }
-
   }
   mole.qboMax=1.67;
   mole.qbeforehkl=qbeforehkl;
@@ -2687,7 +2441,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
     mole.showbonds = mole.connecting(mole.showatoms);
     int lnrr=0;
     CEnvironment belo;
-    //printf("belo: %d\n",bedeRloneLY.size());
     for (int bl=0; bl<bedeRloneLY.size(); bl++){
       int ignore=0;
       QStringList tok = bedeRloneLY.at(bl).split(sep,skipEmptyParts);
@@ -2778,7 +2531,6 @@ void load_sheldrick(QString fileName, QString &inhalt){
 
   }  
   QString fcfname = s.myfcf(fileName);//compute fcf6 from hkl and structure
-  //fcfname.replace(QRegExp(".res$|.ins$",Qt::CaseInsensitive),".fcf");
   loadFouAndPerform(fcfname.toLocal8Bit());
   QMap<int,double> unit;
   for (int i=0; i<mole.asymm.size(); i++){
@@ -2788,6 +2540,7 @@ void load_sheldrick(QString fileName, QString &inhalt){
 
 int main(int argc, char *argv[]){
     HKLMX=200;
+    bool recheck=false;
     QCoreApplication a(argc, argv);
     QString fileName="";
     if (argc>1){
@@ -2796,14 +2549,12 @@ int main(int argc, char *argv[]){
             (QCoreApplication::arguments().at(i).contains(".res",Qt::CaseInsensitive)))          
             fileName=QCoreApplication::arguments().at(i);
         if ((QCoreApplication::arguments().at(i)=="-HKLMAX")) HKLMX = QCoreApplication::arguments().at(i+1).toInt();
+        if ((QCoreApplication::arguments().at(i)=="-recheck")) recheck=true;
         }
       }
-
-    //loadFouAndPerform("C:/Users/Christian.Huebschle/Documents/autoHFIX_noGUI/autoHFIX_noGUI/test.fcf");
     if (fileName.isEmpty()) return 1;
     bool gut=false;
     QFile test;
-    // alltest will contain the shelxfile that is displayed:
     QString alltest;
     test.setFileName(fileName);
     if (test.exists()&&test.size()){
@@ -2824,13 +2575,11 @@ int main(int argc, char *argv[]){
       }
     }
     if (!gut) {
-      //QMessageBox::information(this, "information", QString("Can't open %1").arg(fileName));
       test.open(QIODevice::ReadOnly|QIODevice::Text);
       alltest=test.readAll();
       test.close();
       return 2;
     }
-    //bool notRefine = alltest.contains("DISABLE_REFINE");// this has to be here to work correctly
     alltest.replace(QRegExp("=\\s*[\\r\\n]+\\s{1,}"),"==");
     resLines = alltest.split('\n');
     alltest.replace(QRegExp("REM[^\\n]*\n"),"\n");
@@ -2839,7 +2588,6 @@ int main(int argc, char *argv[]){
       QString incl=alltest.section(QRegExp("[\\n^]\\++"),1,1,QString::SectionSkipEmpty);
       incl=incl.section('\n',0,0);
       QString pre=fileName.section('/',0,-2);
-  //    qDebug()<<pre+"/"+incl<<QFileInfo(pre+"/"+incl).exists()<<dirName;
       if (QFileInfo(pre+"/"+incl).exists()) {
         QFile include(pre+"/"+incl);
         QString inst;
@@ -2860,11 +2608,10 @@ int main(int argc, char *argv[]){
     alltest=resLines.join("\n");
     QString insname = fileName;
     insname.replace(QRegExp(".res$|.ins$",Qt::CaseInsensitive),".ins");
-    //load_sheldrick(insname, alltest);
+    if (recheck) load_sheldrick(insname, alltest);
     alltest=alltest.replace("==","=\n   ");
     QFile insfi(insname);
     insfi.open(QIODevice::WriteOnly|QIODevice::Text);
     insfi.write(alltest.toAscii());
     insfi.close();
-    printf("test1\n");
 }
