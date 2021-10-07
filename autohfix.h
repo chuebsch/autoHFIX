@@ -70,4 +70,19 @@ float f000;
     QStringList resLines;
     QList<double> fvar;//!<List of Free Variables.
     QMap<int,int> fvarCntr;//!<Free Variable counter QMap.
+    QString labelPSE,labelSuffix,nextLabel,title;
+    int labelIndex;
+
+    int resiNrSpin;
+    int indexSpin;
+    int partSpin;
+    int spinSelectPart;
+
+    QString resiResiClass;
+    QStringList resiResiClassCB;
+    bool nowaste;// start labeling always at 1
+    int sortierWeise = 1;
+    QList<int> parenthesis;//!< List of lines.  If the line in an afix environment the value is greater than zero.
+    QList<int> parenthesis2;//!< List of lines. The value is the current part number.
+    QList<bool> comment;//!< List of all lines true if they are comments
 #endif // AUTOHFIX_H

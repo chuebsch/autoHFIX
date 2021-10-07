@@ -2538,9 +2538,656 @@ void load_sheldrick(QString fileName, QString &inhalt){
   }
 }//shelx
 
+bool isLabelInUse(){
+  QStringList alab;
+  for (int i =0; i<mole.asymm.size(); i++){
+    alab.append(mole.asymm.at(i).Label);
+  }
+  QString nn;
+  //wenn rufMode dann labelIndex auf 1 setzen und hochzaehlen bis (alab.contains(nn,Qt::CaseInsensitive)) false
+  // sollte (labelIndex<0) sein dann suffix auf A und hochzaehlen
+  if (labelIndex<0) nextLabel=QString("%1%2").arg(labelPSE).arg(labelSuffix);
+  else nextLabel=QString("%1%2%3").arg(labelPSE).arg(labelIndex).arg(labelSuffix);
+  if (!nextLabel.startsWith("any")) nextLabel=nextLabel.left(4);
+  if ((partSpin!=0)||(resiNrSpin!=0)){
+    nn=QString("%1_%3%4")
+      .arg(nextLabel)
+      .arg((resiNrSpin)?QString::number(resiNrSpin):"")
+      .arg((partSpin)?QString::number((partSpin<0)?
+            36+partSpin:
+            partSpin+9,36):"");
+
+  }else
+    nn=nextLabel;
+  return (alab.contains(nn,Qt::CaseInsensitive));
+}
+void updateLabel(){
+  indexSpin=labelIndex;
+  //  if ((rufModeBox->isChecked())&&(!nextLabel.contains("any"))) labelIndex=1;
+  bool inuse=isLabelInUse();
+  if ((inuse)&&(1)){
+    while (isLabelInUse()) {
+      labelIndex++;
+      if (labelIndex>999) {
+        labelIndex=00;
+        //sufixBox->setCurrentIndex((sufixBox->count()>sufixBox->currentIndex()+1)?sufixBox->currentIndex()+1:sufixBox->currentIndex());
+        updateLabel();
+      }
+    }
+    inuse=isLabelInUse();
+    indexSpin=labelIndex;
+  }
+  for (int i=0; i<mole.asymm.size(); i++){
+    if (mole.asymm.at(i).Label!=mole.showatoms.at(i).Label){
+      mole.showatoms[i].Label=mole.asymm.at(i).Label;
+    }
+  }
+}
+
+
+void renameRNchanged(int ii){
+  QMap<int,QString> resNrClass;
+  for (int i=0; i<resLines.size(); i++){
+    QString resil=resLines.at(i).toUpper();
+    if (!resil.startsWith("RESI")) continue;
+    resil.remove(QRegExp("^RESI"));//remove resi at the beginning resi could be also a (STUPID) resi class
+    QString resinr=resil;
+    resil.remove(QRegExp("\\b\\d+\\b"));//remove the number which separated (e.g. not like CCF3)
+    resinr.remove(resil.trimmed());//the rest should be the number
+    int rn=resinr.trimmed().toInt();
+    resNrClass[rn]=resil.trimmed();
+  }
+
+  labelIndex=1;
+  if (!ii) {
+    //resiResiClass->setEnabled(false);
+    resiResiClass=("");
+    //resiResiClassCB->setEnabled(false);
+  }
+  else {
+    //resiResiClassCB->setEnabled(!resNrClass.contains(ii));
+    //resiResiClass->setDisabled(resNrClass.contains(ii));
+    resiResiClass=resNrClass[ii];
+  }
+  updateLabel();
+
+}
+
+void renamUpdate(){
+  //updateTieFreeVar();
+  labelSuffix = "";
+  //sufixBox->clearEditText();
+  QStringList RCL;//ResiClassList
+  RCL.append("");
+  QString curcls=resiResiClass;
+  if (!curcls.isEmpty()) RCL.append(curcls);
+  for (int i=0; i<mole.asymm.size(); i++){
+    if (mole.asymm.at(i).an<0) continue;
+    if (!RCL.contains(mole.asymm.at(i).ResiClass))RCL.append(mole.asymm.at(i).ResiClass);
+  }
+  resiResiClassCB.clear();
+  resiResiClassCB.append(RCL);
+  //if (!curcls.isEmpty()) resiResiClassCB->setCurrentIndex(resiResiClassCB->findText(curcls));
+  renameRNchanged(resiNrSpin);
+  resiResiClass=curcls;
+}
+
+void rename2ThisAtom(int index){
+  //printf("2\n");
+  if (index>mole.asymm.size()) return;
+  QRegExp num=QRegExp("\\d+");
+  int p=mole.asymm.at(index).an;
+  //bool rmo= rufModeBox->isChecked(), iix=indexIncr->isChecked();
+  //rufModeBox->setChecked(false);
+  //sufixBox->setCurrentIndex(0);
+  labelPSE=mole.pse(p);
+  //sufixBox->setCurrentIndex(1);
+  if (mole.asymm.at(index).Label.contains(num)) {
+
+    labelIndex=mole.asymm.at(index).Label.section(QRegExp("\\D+"),0,0,QString::SectionSkipEmpty).toInt();
+    labelSuffix=mole.asymm.at(index).Label.section(num,1,1);
+    labelSuffix.remove(QRegExp("[^A-Za-z']+"));
+  }
+  else{
+    labelIndex=-1;
+    labelSuffix=mole.asymm.at(index).Label;
+    labelSuffix.remove(0,labelPSE.size());
+    labelSuffix.remove(QRegExp("[^A-Za-z']+"));
+  }
+  labelPSE="H";
+  partSpin=(mole.asymm.at(index).part);
+  resiNrSpin=mole.asymm.at(index).resiNr;
+  resiResiClass=mole.asymm.at(index).ResiClass;
+  updateLabel();
+  renamUpdate();
+  updateLabel();
+}
+
+QString sortLabelList(CEnvironment &asymm, MyAtom &tatze){
+    if (asymm.isEmpty()) return "HKLF";
+    QMultiMap<long double,MyAtom> atomSortMap;
+    long double lodo=0.0l;
+    int amax = asymm.size();
+
+    int t1=0,t2=0;    
+    for (int i=0; i < asymm.size(); i++){
+      if (asymm.at(i).an<0) continue;
+      t1++;
+      QString s1 = asymm.at(i).Label.section('_',0,0);
+      s1.remove(0,mole.pse(asymm.at(i).an).size());
+      int n1 = s1.section(QRegExp("\\D"),0,0).toInt();
+      int r1 = 0 ;
+      char cc[10];
+      strncpy(cc,s1.section(QRegExp("\\d+"),1,-1).toStdString().c_str(),4);
+      for (size_t k=0; k<strlen(cc);k++) {r1*=256;r1+=(size_t)cc[k];}
+      switch (sortierWeise){
+        case 1:
+          lodo=asymm.at(i).resiNr*99*amax+
+                  asymm.at(i).part*amax+
+                  n1+
+                  ((110-asymm.at(i).an)/220.0l)+
+                  (r1 / 50000.0l);//46656
+          //atomSortMap.insertMulti(lodo,asymm.at(i));
+          atomSortMap.insert(lodo,asymm.at(i));
+          break;
+        case 2:
+          lodo=asymm.at(i).resiNr*99*amax+
+                  asymm.at(i).part*amax+
+                  n1/999.0l+
+                  ((110-asymm.at(i).an))+
+                  (r1 / 50000.0l);//46656
+
+          atomSortMap.insert(lodo,asymm.at(i));
+          //printf("##= %Lf %d %d %d %d %d\n",lodo,asymm.at(i).resiNr,asymm.at(i).part,n1,(110-asymm.at(i).an),r1);
+          break;
+        case 3:
+          lodo=  asymm.at(i).resiNr*99*amax+
+                  asymm.at(i).part*amax+
+                  n1/999.0l+
+                  sfac.indexOf(asymm.at(i).an)*10+
+                  (r1 / 50000.0l);//46656
+          atomSortMap.insert(lodo,asymm.at(i));
+          break;
+        case 4:
+          lodo=
+          asymm.at(i).resiNr*99*amax+
+          asymm.at(i).part*amax+
+          n1/50000.0l+
+          ((110-asymm.at(i).an)/220)+
+          (r1 );//46656
+          atomSortMap.insert(lodo,asymm.at(i));
+          t2++;
+          break;
+        case 5:
+          lodo=
+          asymm.at(i).molindex*9999*amax+
+          asymm.at(i).resiNr*99*amax+
+          asymm.at(i).part*amax+
+          n1/999.0l+
+          ((110-asymm.at(i).an))+
+          (r1 / 50000.0l);//46656
+          atomSortMap.insert(lodo,asymm.at(i));
+          /*printf("%s %g\n", asymm.at(i).Label.toStdString().c_str(),asymm.at(i).molindex*9999*amax+
+              asymm.at(i).resiNr*99*amax+
+              asymm.at(i).part*amax+
+              n1/999.0+
+              ((110-asymm.at(i).an))+
+              (r1 / 50000.0));*/
+          break;
+        case 6:
+            lodo=  asymm.at(i).resiNr*99*amax+
+                    asymm.at(i).part*amax+
+                    mole.ueq(asymm.at(i).uf);
+
+        atomSortMap.insert(lodo,asymm.at(i));
+        break;
+        default:
+          atomSortMap.insert(i, asymm.at(i));
+          break;
+      }
+    }
+    //printf("LINE: %d\n",__LINE__);
+    {
+        QString s1 = tatze.Label.section('_',0,0);
+        s1.remove(0,mole.pse(tatze.an).size());
+        int n1 = s1.section(QRegExp("\\D"),0,0).toInt();
+        int r1 = 0 ;
+        char cc[10];
+        strncpy(cc,s1.section(QRegExp("\\d+"),1,-1).toStdString().c_str(),4);
+        for (size_t k=0; k<strlen(cc);k++) {r1*=256;r1+=(size_t)cc[k];}
+        //printf("VV= %Lf %d %d %d %d %d\n",lodo,tatze.resiNr,tatze.part,n1,(110-tatze.an),r1);
+    switch (sortierWeise){
+      case 1:
+        lodo=tatze.resiNr*99*amax+
+                tatze.part*amax+
+                n1+
+                ((110-tatze.an)/220.0l)+
+                (r1 / 50000.0l);//46656
+        break;
+      case 2:
+        lodo=tatze.resiNr*99*amax+
+                tatze.part*amax+
+                n1/999.0l+
+                ((110-tatze.an))+
+                (r1 / 50000.0l);//46656
+        break;
+      case 3:
+        lodo=  tatze.resiNr*99*amax+
+                tatze.part*amax+
+                n1/999.0l+
+                sfac.indexOf(tatze.an)*10+
+                (r1 / 50000.0l);//46656
+        break;
+      case 4:
+        lodo=
+        tatze.resiNr*99*amax+
+        tatze.part*amax+
+        n1/50000.0l+
+        ((110-tatze.an)/220)+
+        (r1 );//46656
+        break;
+      case 5:
+        lodo=
+        tatze.molindex*9999*amax+
+        tatze.resiNr*99*amax+
+        tatze.part*amax+
+        n1/999.0l+
+        ((110-tatze.an))+
+        (r1 / 50000.0l);//46656
+        break;
+    case 6:
+        lodo=  tatze.resiNr*99*amax+
+               tatze.part*amax+
+               mole.ueq(tatze.uf);
+        break;
+    }
+    }
+    //printf("LINE: %d\n",__LINE__);
+    QList<long double> kys = atomSortMap.keys();
+    long double fi = kys.first();//, la = kys.last();
+    QString l="HKLF";
+    //printf("value = %Lf first = %Lf last = %Lf\n", lodo, fi, la);
+    if ((lodo>=fi)) {//
+        CEnvironment asymm2    =  atomSortMap.values();
+        int idx=0;
+        for (; (idx<kys.size())&& (lodo>kys.at(idx)); idx++){}
+        if (idx>0) idx--;
+      //  printf("idx %d\n",idx);
+        l = asymm2.at(idx).orginalLine;
+        asymm2.clear();
+    }else{
+        // find the line before the first existing atom
+        int da = resLines.indexOf(asymm.first().orginalLine);
+        if (da>0) {
+            da--;
+            l=resLines.at(da);
+        }
+    }
+    kys.clear();
+    atomSortMap.clear();
+    return l;
+}
+
+
+void updateAfix(){
+  parenthesis.clear();
+  parenthesis2.clear();
+  comment.clear();
+  int probe=0,aprobe=0,amn=0;
+  bool kommentar=false;
+  for (int i=0; i<resLines.size();i++){
+    kommentar =  (resLines.at(i).contains(QRegExp("^REM",Qt::CaseInsensitive)));
+    comment.append(kommentar);
+      if (resLines.at(i).contains(QRegExp("^AFIX\\s+0",Qt::CaseInsensitive))) {
+          probe=0;
+          amn=0;
+      }
+    else {
+      if (resLines.at(i).contains(QRegExp("^AFIX\\s+\\d+",Qt::CaseInsensitive))) {
+    probe++;
+    int m=resLines.at(i).section(QRegExp("\\s+"),1,1,QString::SectionSkipEmpty).toInt()/10;
+        int n=resLines.at(i).section(QRegExp("\\s+"),1,1,QString::SectionSkipEmpty).toInt()%10;
+        if (amn==(m*10+n)) {
+            probe--;
+            parenthesis.last()=2;
+        }
+    if (n==5) {
+      probe=(qMax(probe-2,0));
+    }
+        amn=m*10+n;
+      }
+    }
+    if (resLines.at(i).contains(QRegExp("^HKLF",Qt::CaseInsensitive))) {probe=aprobe=0;}
+    parenthesis.append(qMax(probe,aprobe));
+    aprobe=probe;
+  }
+  probe=0;
+  for (int i=0; i<resLines.size();i++){
+    if (resLines.at(i).contains(QRegExp("^PART\\s+0",Qt::CaseInsensitive))) probe=0;
+    else if (resLines.at(i).contains(QRegExp("^PART\\s+[-0-9]{1,}",Qt::CaseInsensitive)))
+      probe=resLines.at(i).section(' ',1,1,QString::SectionSkipEmpty).toInt();
+    if (resLines.at(i).contains(QRegExp("^HKLF",Qt::CaseInsensitive))) {probe=0;}
+    parenthesis2.append(probe);
+  }
+}
+
+
+void renameThisAtom(int index){
+  if ((index<0)||index>=mole.asymm.size()){
+    if ((index>=0)&&(mole.showatoms.at(index).Label.startsWith('Q'))){
+      MyAtom ato(mole.showatoms.at(index));
+      ato.Label=ato.Label.remove("'");
+      ato.symmGroup=0;
+      ato.sg=0;
+      ato.scod=555;//the identity
+      ato.auidx=index;
+
+      int nindex=mole.asymm.indexOf(ato);
+      if (nindex!=-1 ){
+        mole.asymm[nindex].frac=mole.showatoms.at(index).frac;
+        mole.asymm[nindex].pos=mole.showatoms.at(index).pos;
+        double uEQ=0.05;//mole.ueq(mole.asymm.at(i).uf);
+        mole.asymm[nindex].uf.m11= mole.asymm[nindex].uc.m11= mole.asymm[nindex].uc.m22= mole.asymm[nindex].uc.m33=uEQ;
+        mole.asymm[nindex].isIso=true;
+        mole.asymm[nindex].uf.m33=uEQ;
+        mole.asymm[nindex].uf.m12= mole.asymm[nindex].uf.m21= mole.asymm[nindex].uf.m13= mole.asymm[nindex].uf.m31=
+          mole.asymm[nindex].uf.m23= mole.asymm[nindex].uf.m32= mole.asymm[nindex].uc.m21= mole.asymm[nindex].uc.m12=
+          mole.asymm[nindex].uc.m13= mole.asymm[nindex].uc.m31= mole.asymm[nindex].uc.m32= mole.asymm[nindex].uc.m23=0.0;
+        index=nindex;
+      }else {printf("LINE: %d\n",__LINE__);return;}
+    }
+    else{
+        printf("LINE: %d\n",__LINE__);
+      return;
+    }
+  }
+  //printf("\n I rename %s\n",mole.showatoms.at(index).Label.toStdString().c_str());
+  bool warnicht=false;
+  static int previousHorse=-1;
+  static int previousJokey=-1;
+  CEnvironment respar;
+  QString insertSuchString;
+  //printf("=>%s %s part: %d ResiNr: %d %s\n",nextLabel.toStdString().c_str(),resiResiClass.toStdString().c_str(),partSpin,resiNrSpin,labelPSE.toStdString().c_str());
+  for (int i=0; i<mole.asymm.size();i++){
+      if (mole.asymm.at(i).resiNr!=resiNrSpin) continue;
+      if (mole.asymm.at(i).part!=partSpin) continue;
+      if (i!=index) respar.append(mole.asymm[i]);
+  }
+
+  MyAtom testat=mole.asymm[index];
+  testat.Label=nextLabel;
+  testat.Label.replace("any",mole.pse((mole.asymm.at(index).an)<0?1:mole.asymm.at(index).an));
+  testat.Label=testat.Label.left(4);
+  testat.ResiClass = resiResiClass;
+  testat.resiNr=resiNrSpin;
+  testat.part=partSpin;
+  testat.an=mole.getOZ(labelPSE);
+  if (testat.an<0) {
+    testat.an=5;
+  }
+  //printf("LINE: %d\n",__LINE__);
+  insertSuchString = sortLabelList(respar,testat);
+  //printf("LINE: %d %s\n",__LINE__,insertSuchString.toStdString().c_str());
+  respar.clear();
+  QString nlab = nextLabel ;
+  bool ridingH = false;
+  if (insertSuchString.startsWith('Q')) insertSuchString="HKLF";
+  if ((mole.getOZ(labelPSE)==0)&&(mole.asymm.at(index).an==-1)){
+    int dahin2=-1;
+    for (int isd=0; isd<mole.sdm.size(); isd++){//sdm is sorted in that way that the smalest
+      if (mole.sdm.at(isd).d>1.3) continue;
+      if ((mole.sdm.at(isd).a1==index)&&(mole.asymm.at(mole.sdm.at(isd).a2).an>0)) {
+        dahin2=mole.sdm.at(isd).a2;
+        break;
+      }
+      if ((mole.sdm.at(isd).a2==index)&&(mole.asymm.at(mole.sdm.at(isd).a1).an>0)) {
+        dahin2=mole.sdm.at(isd).a1;
+        break;
+      }
+    }
+    if (dahin2==-1)insertSuchString="HKLF";
+    else{
+      if (1){//!enterRenameMode->isChecked()) {
+        nowaste=false;
+        rename2ThisAtom(dahin2);
+        nowaste=true;
+      }
+      ridingH=true;
+      //int orderer=0;
+      if (previousHorse==dahin2){
+          insertSuchString=mole.asymm.at(previousJokey).orginalLine;
+      }else{
+          insertSuchString=mole.asymm.at(dahin2).orginalLine;
+      }
+      previousHorse=dahin2;
+      previousJokey=index;
+    }
+  }
+  updateAfix();
+  QString label = mole.showatoms.at(index).orginalLine;
+  int da=resLines.indexOf(QRegExp("^HKLF.*",Qt::CaseInsensitive));
+  if (da>0) da--;
+  //printf("LINE: %d da=%d %d %s\n",__LINE__,da,resLines.size(),resLines.at(da).toStdString().c_str());
+  //qDebug()<<resLines;
+  if ((da>=0)&&(parenthesis.at(da))){
+      while ((da>0)&&((resLines.at(da).startsWith("RESI",Qt::CaseInsensitive))||(resLines.at(da).startsWith("PART",Qt::CaseInsensitive)))) da--;
+    resLines.insert(da,"AFIX 0\n");
+    updateAfix();
+  }
+  da=resLines.indexOf(label,Qt::CaseInsensitive);
+  if (da<0) warnicht=true;
+  if (warnicht) {
+     // printf("LINE: %d %d [%s]\n",__LINE__,index,label.toStdString().c_str());
+    return;//hier muss eingefuegt werden: verhalten bei objecten die noch nicht in der datei stehen
+  }
+  //printf("LINE: %d %d =?= %d\n",__LINE__,parenthesis.size(),resLines.size());
+  if ((da>=0)&&(parenthesis.at(da))){
+      // no rename of afixed atoms
+      //printf("LINE: %d\n",__LINE__);
+    return;
+  }
+  QString vorherig,neues;
+  QString otxt= resLines.at(da);
+  int di=da;
+  while ((di+1<parenthesis.size())&&(parenthesis.at(di+1))) di++;
+  vorherig.clear();
+  for (int j=da;j<=di; j++) {
+      vorherig.append(resLines.at(j));
+      vorherig.append('\n');
+  }
+  neues = vorherig;
+  //qDebug()<<di<<otxt<<"\n"<<da<<neues;
+  /*
+  if (tieType->itemData(tieType->currentIndex()).toInt()){
+    QString asof=neues.section(QRegExp("\\s+"),5,5,QString::SectionSkipEmpty);
+    asof.prepend(" ");
+    int fnj=tieFVNr->value();
+    QString nsof=(fnj!=1)?QString(" %1").arg(tieType->itemData(tieType->currentIndex()).toInt()*(fabs(fmod(mole.asymm.at(index).sof_org,10))+(10*fnj)),7,'f',5):
+      QString(" %1").arg(fabs(fmod(mole.asymm.at(index).sof_org,10)*tieFix->value()+10),7,'f',5);
+    neues.replace(asof,nsof);
+    otxt.replace(asof,nsof);
+    mole.asymm[index].sof_org=nsof.toDouble();
+  }*/
+  QString oldSfac=neues.section(QRegExp("\\s+"),1,1,QString::SectionSkipEmpty);
+  int ii=sfac.indexOf(mole.getOZ(labelPSE));
+  QString nl=QString("%1     ").arg(nextLabel,-4,' ');
+  nl=nl.replace("any",mole.pse(sfac.at(oldSfac.toInt()-1))).left(4);
+  if (ii<0) {
+    nl=nl.replace("any",mole.pse(sfac.at(oldSfac.toInt()-1))).left(4);
+    ii=oldSfac.toInt()-1;
+  }
+  else{
+    neues.replace(QRegExp(QString("\\s%1\\s").arg(oldSfac)),QString(" %1 ").arg((ii+1)));
+    otxt.replace(QRegExp(QString("\\s%1\\s").arg(oldSfac)),QString(" %1 ").arg((ii+1)));
+  }
+  nl=nl.left(4);
+  neues.replace(0,4,nl);
+  otxt.replace(0,4,nl);
+  QString ol=mole.asymm[index].Label.section('_',0,0);
+  QString oldH=ol;
+  oldH.replace(QRegExp(QString("^%1").arg(mole.pse(mole.asymm[index].an)),Qt::CaseInsensitive),"H");
+  mole.asymm[index].Label=nextLabel;
+  mole.asymm[index].Label.replace("any",mole.pse(sfac.at(oldSfac.toInt()-1)));
+  mole.asymm[index].Label=mole.asymm[index].Label.left(4);
+  if (mole.asymm[index].an<0) {
+    otxt=neues=
+      QString("%1 %2 %3 %4 %5 %6 %7 \n")
+      .arg(mole.asymm[index].Label,-5)
+      .arg(ii+1)
+      .arg(mole.asymm.at(index).frac.x,9,'f',5)
+      .arg(mole.asymm.at(index).frac.y,9,'f',5)
+      .arg(mole.asymm.at(index).frac.z,9,'f',5)
+      .arg(mole.asymm.at(index).sof_org,9,'f',5)
+            .arg((ridingH)?"-1.5":"0.05");
+  }
+  mole.asymm[index].an=mole.getOZ(labelPSE);
+  if (mole.asymm[index].an<0) {
+    mole.asymm[index].an=sfac.at(oldSfac.toInt()-1);
+  }
+  QString newH=mole.asymm[index].Label;
+  newH.replace(QRegExp(QString("^%1").arg(mole.pse(mole.asymm.at(index).an)),Qt::CaseInsensitive),"H");
+  newH=newH.left(3);
+  neues.replace(oldH,newH);
+
+  //printf("altes H='%s' neues H='%s' %s %s\n",oldH.toStdString().c_str(),newH.toStdString().c_str(),mole.asymm[index].Label.toStdString().c_str(),mole.pse(mole.asymm.at(index).an).toStdString().c_str());
+  mole.asymm[index].orginalLine=otxt;
+  //  printf(":%s:\n",mole.asymm[index].orginalLine.toStdString().c_str());
+  //  qDebug()<<"aa"<<mole.asymm[index].orginalLine;
+  mole.asymm[index].ResiClass = resiResiClass;
+  mole.asymm[index].resiNr=resiNrSpin;
+  mole.asymm[index].part=partSpin;
+  //printf("di %d da %d\n",di,da);
+  for (int j=di; j>=da; j--) {
+      //qDebug()<<j<<"I remove now:"<<resLines.at(j);
+      resLines.removeAt(j);
+  }
+  //cursor.deleteChar();
+
+  //QTextCursor wc = cursor;
+  if ((partSpin!=0)||(resiNrSpin!=0)){
+    mole.asymm[index].Label=QString("%1_%3%4")
+      .arg(nextLabel)
+      .arg((resiNrSpin)?QString::number(resiNrSpin):"")
+      .arg((partSpin)?QString::number((partSpin<0)?
+            36+partSpin:
+            partSpin+9,36):"");
+    mole.asymm[index].Label.replace("any",mole.pse(sfac.at(oldSfac.toInt()-1)));
+  }
+
+  updateAfix();
+  da=resLines.indexOf(QRegExp(insertSuchString,Qt::CaseInsensitive));
+  da--;
+  if (da<0){
+      da=di;
+  }else if(insertSuchString!="HKLF"){
+      while (parenthesis.at(da+1)) da++;
+      da++;
+  }
+  if ((insertSuchString=="HKLF")&&(mole.asymm[index].resiNr)) resLines.insert(da++,QString("RESI %1 %2\n")
+      .arg(mole.asymm[index].resiNr)
+      .arg(mole.asymm[index].ResiClass));
+  if ((insertSuchString=="HKLF")&&(mole.asymm[index].part)) resLines.insert(da++,QString("PART %1 \n")
+      .arg(mole.asymm[index].part));
+  if (!neues.endsWith("\n"))neues.append('\n');
+  resLines.insert(da++,neues);
+  //if (!neues.endsWith("\n")) resLines.insert("\n");
+  if ((insertSuchString=="HKLF")&&(mole.asymm[index].part)) resLines.insert(da++,"PART 0\n");
+  if ((insertSuchString=="HKLF")&&(mole.asymm[index].resiNr)) resLines.insert(da++,"RESI 0\n");
+    // !!!!
+  labelIndex++;
+  updateLabel();
+}
+
+
+bool restraintsOrConstraints(){
+    bool corr =  (resLines.indexOf(QRegExp("AFIX",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("BIND",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("CHIV",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("DANG",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("DFIX",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("EADP",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("EXYZ",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("FRAG",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("FEND",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("FREE",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("HFIX",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("MPLA",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("SADI",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("SAME",Qt::CaseInsensitive))!=-1) ;
+    corr=(corr)||(resLines.indexOf(QRegExp("FLAT",Qt::CaseInsensitive))!=-1) ;
+    return corr;
+}
+
+bool aula(bool useResis=true){//!< Auto Labeling
+
+  if (mole.asymm.isEmpty())return false;
+  bool hasafix = resLines.contains("AFIX",Qt::CaseInsensitive) ;
+  bool hasrest = restraintsOrConstraints();
+  bool hash=false;
+  for (int i=0;i<mole.asymm.size();i++){if (mole.asymm.at(i).an==0) {hash=true; break;}}
+  //bool ok=false;
+  printf("It has AFIX = %d instructions! It has %d restraints or constraints!\n",hasafix,hasrest);
+  if (hasafix||hasrest) return false;
+  QList<int> chain;
+  //sdm();
+  printf("TEST\n========Au=La=====================================================================\n");
+  printf(
+      "        .-\"-~-\"-.\n"
+      "       /.-\"-.-\"-.\\\n"
+      "       ||((o|o))||\n"
+      "       )\\__/V\\__/(\n"
+      "      / ~ -...- ~ \\\n"
+      "     |\\` ~. ~ .~ `/|\n"
+      "     | `~ - ^ - ~` |\n"
+      "     | ;  '  :  .  |\n"
+      "      \\ . : '  ; '/\n"
+      "       '.   ; ' .'\n"
+      "        `uu---uu`\n");
+  mole.inventNewLabels(chain);
+
+  if (chain.isEmpty()){
+    return false;
+  }
+  printf("{");
+  for (int i=0; i<chain.size(); i++){
+    int das = chain.at(i);
+    printf("%s--",mole.asymm.at(das).Label.toStdString().c_str());
+    //labelIndex=mole.asymm.at(das).Label.section(QRegExp("\\D+"),0,0,QString::SectionSkipEmpty).toInt();
+    labelSuffix="";
+    partSpin=(mole.asymm.at(das).part);
+    if (useResis) {
+        resiNrSpin=(mole.asymm.at(das).molindex);
+        resiResiClass=(QString("M%1").arg(mole.asymm.at(das).molindex,3,10,QLatin1Char('0')));
+    }else resiNrSpin=(0);
+    labelPSE=mole.pse(mole.asymm.at(das).an);
+    labelSuffix="";
+    renamUpdate();
+    renameThisAtom(das);
+  }
+  printf("}\n");
+  printf("{");
+  for (int i=0; i<chain.size(); i++){
+    int das = chain.at(i);
+    printf("%s~",mole.asymm.at(das).Label.toStdString().c_str());
+  }
+  printf("}\n");
+  int posibile=0;
+  for (int i=0; i<mole.asymm.size(); i++) if (mole.asymm.at(i).an>=0) posibile++;
+  printf("aula ends %d %d\n",posibile,chain.size());
+  return true;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief main
+/// \param argc number of commanline arguments
+/// \param argv arguments argv[0] is the name of the exectuable
+/// \return if not zero then there was a problem
+///
 int main(int argc, char *argv[]){
     HKLMX=200;
     bool recheck=false;
+    bool doaula=false;
     QCoreApplication a(argc, argv);
     QString fileName="";
     if (argc>1){
@@ -2550,6 +3197,7 @@ int main(int argc, char *argv[]){
             fileName=QCoreApplication::arguments().at(i);
         if ((QCoreApplication::arguments().at(i)=="-HKLMAX")) HKLMX = QCoreApplication::arguments().at(i+1).toInt();
         if ((QCoreApplication::arguments().at(i)=="-recheck")) recheck=true;
+        if ((QCoreApplication::arguments().at(i)=="-aula")) doaula=true;
         }
       }
     if (fileName.isEmpty()) return 1;
@@ -2602,8 +3250,50 @@ int main(int argc, char *argv[]){
 
     load_sheldrick(fileName, alltest);
     printf("\nautoHfix ...%d %d\n",resLines.size(),mole.asymm.size());
+    labelIndex=1;
+    resiNrSpin=0;
+    indexSpin=1;
+    partSpin=0;
+    resiResiClass="";
+    resiResiClassCB.clear();
+    if (doaula) {
+        if (aula(false)){
+        alltest.clear();
+        alltest=resLines.join("\n");
+        QString resname = fileName;
+        QFile insfi(resname);
+        alltest=alltest.replace("==","=\n   ");
+        insfi.open(QIODevice::WriteOnly|QIODevice::Text);
+        insfi.write(alltest.toAscii());
+        insfi.close();
+        test.open(QIODevice::ReadOnly|QIODevice::Text);
+        alltest=test.readAll();
+        test.close();
+        alltest.replace(QRegExp("=\\s*[\\r\\n]+\\s{1,}"),"==");
+        resLines = alltest.split('\n');
+        alltest.replace(QRegExp("REM[^\\n]*\n"),"\n");
+        alltest.replace(QRegExp("![^\\n]*\n"),"\n");
+        while (alltest.contains(QRegExp("[\\n^]\\++[^\\n]*\n"))) {
+          QString incl=alltest.section(QRegExp("[\\n^]\\++"),1,1,QString::SectionSkipEmpty);
+          incl=incl.section('\n',0,0);
+          QString pre=fileName.section('/',0,-2);
+          if (QFileInfo(pre+"/"+incl).exists()) {
+            QFile include(pre+"/"+incl);
+            QString inst;
+            if (include.open(QIODevice::ReadOnly|QIODevice::Text)) inst=include.readAll();
+            alltest.replace("++" + incl, inst);
+            alltest.replace("+" + incl, inst);
+          } else {
+            alltest.remove("++" + incl);
+            alltest.remove("+" + incl);
+          }
+        }
+        load_sheldrick(resname, alltest);
+        }
+    }
+    printf("\nbefore autoHfix lines %d atoms %d\n",resLines.size(),mole.asymm.size());
     autoHFix();
-    printf("\n?autoHfix %d %d\n",resLines.size(),mole.asymm.size());
+    printf("\n after autoHfix lines %d atoms %d\n",resLines.size(),mole.asymm.size());
     alltest.clear();
     alltest=resLines.join("\n");
     QString insname = fileName;
@@ -2614,4 +3304,5 @@ int main(int argc, char *argv[]){
     insfi.open(QIODevice::WriteOnly|QIODevice::Text);
     insfi.write(alltest.toAscii());
     insfi.close();
+    return 0;
 }
